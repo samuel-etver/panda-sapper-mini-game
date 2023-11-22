@@ -57,21 +57,21 @@ function hideBombs(xs, ys) {
     var i
     var x, y;
 
-   /* tileStates[xs][ys] += CORRECT;
+    tileStates[xs][ys] += CORRECT;
 
-   *for(i = 0; i < gridBombs; i++) {
+    for (i = 0; i < gridBombs; i++) {
         do {
             x = (proxyObj.rand() >> 8) % gridWidth;
             y = (proxyObj.rand() >> 8) % gridHeight;
         } while(tileStates[x][y] !== UNSEEN || countAdjacent(x, y, CORRECT));
         tileStates[x][y] += ACTUAL_BOMB;
-    }*/
+    }
 
     tileStates[xs][ys] -= CORRECT;
 
     for (x = 0; x < gridWidth; x++) {
         for (y = 0; y < gridHeight; y++) {
-            if(!(tileStates[x][y] & ACTUAL_BOMB))
+            if (!(tileStates[x][y] & ACTUAL_BOMB))
                 tileStates[x][y] += countAdjacent(x, y, ACTUAL_BOMB);
         }
     }
@@ -84,7 +84,7 @@ function selectAdjacent(x, y) {
     var dx, dy;
     var dd = gridType === GAME_TRIANGLE ? 2 : 1;
 
-    if(tileStates[x][y] & UNSEEN || gameStatus === GAME_WAIT)
+    if (tileStates[x][y] & UNSEEN || gameStatus === GAME_WAIT)
         return;
 
     var n = countAdjacent(x, y, THINK_BOMB);
@@ -92,12 +92,12 @@ function selectAdjacent(x, y) {
     if (tileStates[x][y] !== n)
         return;
 
-    for(dx = -dd; dx <= dd; dx++) {
+    for (dx = -dd; dx <= dd; dx++) {
         var tmpX = x + dx;
-        if(tmpX < 0 || tmpX >= gridWidth)
+        if (tmpX < 0 || tmpX >= gridWidth)
             continue;
 
-        for(dy = -1; dy <= 1; dy++) {
+        for (dy = -1; dy <= 1; dy++) {
             var tmpY = y + dy;
             if (tmpY < 0 || tmpY >= gridHeight)
                 continue;
@@ -108,7 +108,7 @@ function selectAdjacent(x, y) {
             if (gridType === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
                 continue;
 
-            if(gridType === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) -1 ) && (dx === -2 || dx === 2))
+            if (gridType === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) -1 ) && (dx === -2 || dx === 2))
                 continue;
 
             if (!(tileStates[tmpX][tmpY] & THINK_BOMB))
@@ -131,28 +131,28 @@ function removeEmpties(x, y) {
 
     proxyObj.drawSquare(x, y, tileStates[x][y]);
 
-    if(tileStates[x][y] !== EMPTY)
+    if (tileStates[x][y] !== EMPTY)
         return;
 
-    for(dx = -dd; dx <= dd; dx++) {
+    for (dx = -dd; dx <= dd; dx++) {
         var tmpX = x + dx;
 
-        if(tmpX < 0 || tmpX >= gridWidth)
+        if (tmpX < 0 || tmpX >= gridWidth)
             continue;
 
-        for(dy = -1; dy <= 1; dy++) {
+        for (dy = -1; dy <= 1; dy++) {
             var tmpY = y + dy;
 
-            if(tmpY < 0 || tmpY >= gridHeight)
+            if (tmpY < 0 || tmpY >= gridHeight)
                 continue;
 
-            if(dx === 0 && dy === 0)
+            if (dx === 0 && dy === 0)
                 continue;
 
-            if(gridType === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
+            if (gridType === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
                 continue;
 
-            if(gridType === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) - 1) && (dx === -2 || dx === 2))
+            if (gridType === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) - 1) && (dx === -2 || dx === 2))
                 continue;
 
             removeEmpties(tmpX, tmpY);
@@ -177,13 +177,13 @@ function countAdjacent(x, y, flag) {
             if (tmpY < 0 || tmpY >= gridHeight)
                 continue;
 
-            if(gridType === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
+            if (gridType === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
                 continue;
 
-            if(gridType === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) - 1) && (dx === -2 || dx === 2))
+            if (gridType === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) - 1) && (dx === -2 || dx === 2))
                 continue;
 
-            if(tileStates[tmpX][tmpY] & flag)
+            if (tileStates[tmpX][tmpY] & flag)
                 n++;
         }
     }
