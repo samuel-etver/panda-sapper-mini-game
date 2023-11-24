@@ -45,7 +45,6 @@ var numberOfBombs = [10, 40, 99];
 var widthInTiles = [8, 16, 30];
 var heightInTiles = [8, 16, 16];
 
-
 var tileStates = new Array(MAX_SIZE);
 (function() {
     for (var i = 0; i < MAX_SIZE; i++)
@@ -53,8 +52,19 @@ var tileStates = new Array(MAX_SIZE);
 }());
 
 
-function mainLoop() {
+var idleTimer;
+var startTicks;
 
+
+function gameInit() {
+    idleTimer = new IdleTimer();
+    idleTimer.oneShot = true;
+    idleTimer.callback = displayClock;
+}
+
+
+function gameLoop() {
+    idleTimer.idle();
 }
 
 
@@ -76,7 +86,7 @@ function startGame(level, type) {
 
     proxyObj.scaleWindow();
     proxyObj.drawGrid();
-    proxyObj.startClock(0);
+    startClock(0);
     proxyObj.setUXB(gridBombs);
 }
 
@@ -104,7 +114,7 @@ function hideBombs(xs, ys) {
         }
     }
 
-    proxyObj.startClock(1);
+    startClock(1);
 }
 
 
@@ -286,5 +296,73 @@ function countAdjacent(x, y, flag) {
 }
 
 
+function displayClock() {
+    var ticks1000 = elapsedTime();
+    var ticks = Math.round(ticks1000 / 1000);
+    ticks1000 -= 1000*ticks;
+    idleTimer.interval = 1000-ticks1000;
+    idleTimer.start();
+    proxyObj.updateClock(ticks.toFixed(0));
+}
 
 
+function startClock(reset) {
+    if(reset) {
+        startTicks = Date.now();
+        displayClock();
+    }
+    else {
+        proxyObj.updateClock("0");
+    }
+}
+
+
+function stopClock() {
+    idleTimer.stop();
+    var ticks = elapsedTime();
+    proxyObj.updateClock((ticks/1000.0).toFixed(2));
+    return ticks;
+}
+
+
+function elapsedTime() {
+    return Date.now() - startTicks;
+}
+
+
+function IdleTimer() {
+    this.interval = 100;
+    this.enabled = false;
+    this.oneShot = false;
+    this.callback = undefined;
+    this.lastTicks = undefined;
+}
+
+
+IdleTimer.prototype.start = function() {
+    this.enabled = true;
+    this.lastTicks = Date.now();
+}
+
+
+IdleTimer.prototype.stop = function() {
+    this.enabled = false;
+}
+
+
+IdleTimer.prototype.idle = function() {
+    if (!this.enabled)
+        return;
+
+    var currTicks = Date.now();
+
+    if ((currTicks - this.lastTicks) >= this.interval) {
+        this.lastTicks += this.interval;
+
+        if (this.oneShot)
+            this.stop();
+
+        if (this.callback)
+            this.callback();
+    }
+}
