@@ -11,7 +11,6 @@ var GAME_WON = 3;
 var GAME_READY = 4;
 
 var GAME_START = 10;
-var GAME_QUIT = 11;
 
 var GAME_LEVEL = 12;
 var GAME_EASY = 12;
@@ -65,6 +64,35 @@ function gameInit() {
 
 function gameLoop() {
     idleTimer.idle();
+
+    var xstatus = proxyObj.processEvents();
+
+    if (xstatus >= GAME_LEVEL && xstatus < (GAME_LEVEL+NLEVELS) && xstatus !== gameLevel) {
+       gameLevel = xstatus;
+       xstatus = GAME_START;
+    }
+
+    if (xstatus >= GAME_TYPE && xstatus < (GAME_TYPE+NTYPES) && xstatus !== gameType) {
+       gameType = xstatus;
+       xstatus = GAME_START;
+    }
+
+    if (xstatus === GAME_START) {
+        if (gameStatus === GAME_CONTINUES)
+            stopGame();
+        startGame(gameLevel, gameType);
+        showHighScores();
+    }
+
+    if (gameStatus === GAME_WON) {
+        var elapsedTime = stopGame();
+        addHighScore(ticks);
+        showHighScores();
+    }
+    else if (gameStatus === GAME_LOST) {
+        stopGame();
+        showHighScores();
+    }
 }
 
 
@@ -88,6 +116,22 @@ function startGame(level, type) {
     proxyObj.drawGrid();
     startClock(0);
     proxyObj.setUXB(gridBombs);
+}
+
+
+function stopGame() {
+    gameStatus = GAME_WAIT;
+    return stopClock();
+}
+
+
+function addHighScore(value) {
+
+}
+
+
+function showHighScores() {
+
 }
 
 
