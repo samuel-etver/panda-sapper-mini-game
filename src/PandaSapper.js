@@ -1,3 +1,5 @@
+var NLEVELS = 3;
+var NTYPES = 3;
 
 var EMPTY = 0;
 var ACTUAL_BOMB = 16;
@@ -31,6 +33,8 @@ var OFFSET_Y = 30;
 var gameStatus;
 var gameType;
 var gameLevel;
+
+var newStatus = 0;
 
 var gridWidth;
 var gridHeight;
@@ -70,14 +74,14 @@ function gameInit() {
 function gameLoop() {
     idleTimer.idle();
 
-    var xstatus = proxyObj.processEvents();
+    var xstatus = processEvents();
 
-    if (xstatus >= GAME_LEVEL && xstatus < (GAME_LEVEL+NLEVELS) && xstatus !== gameLevel) {
+    if (xstatus >= GAME_LEVEL && xstatus < (GAME_LEVEL + NLEVELS) && xstatus !== gameLevel) {
        gameLevel = xstatus;
        xstatus = GAME_START;
     }
 
-    if (xstatus >= GAME_TYPE && xstatus < (GAME_TYPE+NTYPES) && xstatus !== gameType) {
+    if (xstatus >= GAME_TYPE && xstatus < (GAME_TYPE + NTYPES) && xstatus !== gameType) {
        gameType = xstatus;
        xstatus = GAME_START;
     }
@@ -98,6 +102,13 @@ function gameLoop() {
         stopGame();
         showHighScores();
     }
+}
+
+
+function processEvents() {
+    var result = newStatus;
+    newStatus = 0;
+    return result;
 }
 
 
@@ -346,7 +357,7 @@ function countAdjacent(x, y, flag) {
 
 
 function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
-    var x = -1, y =- 1;
+    var x = -1, y = -1;
     var guessX, guessY, dx, dy;
     var i, j, d, dmin = 1e6;
 
@@ -428,8 +439,7 @@ function startClock(reset) {
     if(reset) {
         startTicks = Date.now();
         displayClock();
-    }
-    else {
+    } else {
         proxyObj.updateClock("0");
     }
 }
