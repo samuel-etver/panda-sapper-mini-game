@@ -25,6 +25,9 @@ var CORRECT = 128;
 
 var MAX_SIZE = 30;
 
+var OFFSET_X = 30;
+var OFFSET_Y = 30;
+
 var gameStatus;
 var gameType;
 var gameLevel;
@@ -50,6 +53,8 @@ var tileStates = new Array(MAX_SIZE);
         tileStates[i] = new Array(MAX_SIZE);
 }());
 
+var scaleX = 10;
+var scaleY = 10;
 
 var idleTimer;
 var startTicks;
@@ -337,6 +342,75 @@ function countAdjacent(x, y, flag) {
     }
 
     return n;
+}
+
+
+function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
+    var x = -1, y =- 1;
+    var guessX, guessY, dx, dy;
+    var i, j, d, dmin = 1e6;
+
+    var buttonX = mouseX - OFFSET_X;
+    var buttonY = mouseY - OFFSET_Y;
+
+    switch(gridType) {
+        case GAME_HEXAGON:
+            guessY = (buttonY / scaleY) >> 0;
+            guessX = ((buttonX - (guessY % 2) * (scaleX/2)) / scaleX) >> 0;
+            for (i = guessX - 1; i <= guessX + 1; i++) {
+                for (j = guessY - 1; j <= guessY + 1; j++) {
+                    if (i < 0 || i >= gridWidth || j < 0 || j >= gridHeight)
+                        continue;
+                    dx = buttonX - (i * scaleX + (1 + (j % 2)) * scaleX/2);
+                    dy = buttonY - (j*scaleY + 2 * scaleY/3);
+                    d = dx * dx + dy * dy;
+                    if (d < dmin) {
+                        x = i;
+                        y = j;
+                        dmin = d;
+                    }
+                }
+
+            }
+            break;
+
+        case GAME_SQUARE:
+            x = (buttonX / scaleX) >> 0;
+            y = (buttonY / scaleY) >> 0;
+            break;
+
+        case GAME_TRIANGLE:
+            guessX = (buttonX * 2 / scaleX) >> 0;
+            y = (buttonY / scaleY) >> 0;
+            for (i = guessX - 1; i <= guessX + 1; i++) {
+                if (i < 0 || i >= gridWidth)
+                    continue;
+                dx = buttonX - (i * scaleX/2 + scaleX/2);
+                dy = buttonY - (y * scaleY + (1 + (1 + i + y) % 2) * scaleY/3);
+                d = dx * dx + dy * dy;
+                if (d < dmin) {
+                    x = i;
+                    dmin = d;
+                }
+            }
+    }
+
+    if(x < 0 || x >= gridWidth || y < 0 || y >= gridHeight)
+        return;
+
+
+    switch(buttonNumber) {
+        case 1:
+            selectSquareOrAdjacent(x, y);
+            break;
+        case 2:
+            selectAdjacent(x, y);
+            break;
+        case 3:
+            markBomb(x, y);
+    }
+
+    proxyObj.invalidateGameArea();
 }
 
 
