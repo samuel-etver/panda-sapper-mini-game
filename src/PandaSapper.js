@@ -30,6 +30,8 @@ var MAX_SIZE = 30;
 var OFFSET_X = 30;
 var OFFSET_Y = 30;
 
+var MAX_RAND = 0x7FFF;
+
 var gameStatus;
 var gameType;
 var gameLevel;
@@ -128,10 +130,10 @@ function startGame(level, type) {
             tileStates[x][y] = UNSEEN;
     }
 
-    proxyObj.scaleWindow();
-    proxyObj.drawGrid();
+    scaleWindow();
+    drawGrid();
     startClock(0);
-    proxyObj.setUXB(gridBombs);
+    setUXB(gridBombs);
 }
 
 
@@ -159,8 +161,8 @@ function hideBombs(xs, ys) {
 
     for (i = 0; i < gridBombs; i++) {
         do {
-            x = (proxyObj.rand() >> 8) % gridWidth;
-            y = (proxyObj.rand() >> 8) % gridHeight;
+            x = ((Math.random() * MAX_RAND) >> 8) % gridWidth;
+            y = ((Math.random() * MAX_RAND) >> 8) % gridHeight;
         } while(tileStates[x][y] !== UNSEEN || countAdjacent(x, y, CORRECT));
         tileStates[x][y] += ACTUAL_BOMB;
     }
@@ -204,9 +206,9 @@ function selectSquare(x, y) {
             }
         }
         gameStatus = GAME_LOST;
-        proxyObj.drawGrid();
+        drawGrid();
     } else {
-        proxyObj.drawSquare(x, y, tileStates[x][y]);
+        drawSquare(x, y, tileStates[x][y]);
         if (numberOfThink === numberOfUnseen)
             gameStatus = GAME_WON;
     }
@@ -273,9 +275,9 @@ function markBomb(x, y) {
     else
        numberOfThink--;
 
-    proxyObj.setUXB(gridBombs - numberOfThink);
+    setUXB(gridBombs - numberOfThink);
 
-    proxyObj.drawSquare(x, y, tileStates[x][y]);
+    drawSquare(x, y, tileStates[x][y]);
 
     if (numberOfThink === numberOfUnseen)
         gameStatus = GAME_WON;
@@ -293,7 +295,7 @@ function removeEmpties(x, y) {
 
     numberOfUnseen--;
 
-    proxyObj.drawSquare(x, y, tileStates[x][y]);
+    drawSquare(x, y, tileStates[x][y]);
 
     if (tileStates[x][y] !== EMPTY)
         return;
@@ -421,7 +423,36 @@ function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
             markBomb(x, y);
     }
 
+    invalidateGameArea();
+}
+
+function scaleWindow() {
+    proxyObj.scaleWindow();
+}
+
+
+function drawGrid() {
+    proxyObj.drawGrid();
+}
+
+
+function setUXB(n) {
+    proxyObj.setUXB(n);
+}
+
+
+function invalidateGameArea() {
     proxyObj.invalidateGameArea();
+}
+
+
+function updateClock(txt) {
+    proxyObj.updateClock(txt);
+}
+
+
+function drawSquare(x, y, state) {
+    proxyObj.drawSquare(x, y, state);
 }
 
 
@@ -431,7 +462,7 @@ function displayClock() {
     ticks1000 -= 1000*ticks;
     idleTimer.interval = 1000-ticks1000;
     idleTimer.start();
-    proxyObj.updateClock(ticks.toFixed(0));
+    updateClock(ticks.toFixed(0));
 }
 
 
@@ -440,7 +471,7 @@ function startClock(reset) {
         startTicks = Date.now();
         displayClock();
     } else {
-        proxyObj.updateClock("0");
+        updateClock("0");
     }
 }
 
@@ -448,7 +479,7 @@ function startClock(reset) {
 function stopClock() {
     idleTimer.stop();
     var ticks = elapsedTime();
-    proxyObj.updateClock((ticks/1000.0).toFixed(2));
+    updateClock((ticks/1000.0).toFixed(2));
     return ticks;
 }
 
