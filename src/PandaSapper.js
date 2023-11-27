@@ -1,3 +1,5 @@
+import * as PIXI from 'pixi.js';
+
 var NLEVELS = 3;
 var NTYPES = 3;
 
@@ -32,6 +34,7 @@ var OFFSET_Y = 30;
 
 var MAX_RAND = 0x7FFF;
 
+var gameApp;
 var gameStatus;
 var gameType;
 var gameLevel;
@@ -43,8 +46,6 @@ var gridHeight;
 var gridBombs;
 var gridType;
 var gridLevel;
-
-var proxyObj;
 
 var numberOfUnseen;
 var numberOfThink;
@@ -66,26 +67,28 @@ var idleTimer;
 var startTicks;
 
 
-function gameInit() {
+export function gameInit(app) {
+    gameApp = app;
+
     idleTimer = new IdleTimer();
     idleTimer.oneShot = true;
     idleTimer.callback = displayClock;
 }
 
 
-function gameLoop() {
+export function gameLoop() {
     idleTimer.idle();
 
     var xstatus = processEvents();
 
     if (xstatus >= GAME_LEVEL && xstatus < (GAME_LEVEL + NLEVELS) && xstatus !== gameLevel) {
-       gameLevel = xstatus;
-       xstatus = GAME_START;
+        gameLevel = xstatus;
+        xstatus = GAME_START;
     }
 
     if (xstatus >= GAME_TYPE && xstatus < (GAME_TYPE + NTYPES) && xstatus !== gameType) {
-       gameType = xstatus;
-       xstatus = GAME_START;
+        gameType = xstatus;
+        xstatus = GAME_START;
     }
 
     if (xstatus === GAME_START) {
@@ -124,9 +127,8 @@ function startGame(level, type) {
     numberOfThink = 0;
     gameStatus = GAME_READY;
 
-    var x, y;
-    for (x = 0; x < gridWidth; x++) {
-        for (y = 0; y < gridHeight; y++)
+    for (let x = 0; x < gridWidth; x++) {
+        for (let y = 0; y < gridHeight; y++)
             tileStates[x][y] = UNSEEN;
     }
 
@@ -271,9 +273,9 @@ function markBomb(x, y) {
     tileStates[x][y] ^= THINK_BOMB;
 
     if(tileStates[x][y] & THINK_BOMB)
-       numberOfThink++;
+        numberOfThink++;
     else
-       numberOfThink--;
+        numberOfThink--;
 
     setUXB(gridBombs - numberOfThink);
 
@@ -289,7 +291,7 @@ function removeEmpties(x, y) {
     var dd = gridType === GAME_TRIANGLE ? 2 : 1;
 
     if (!(tileStates[x][y] & UNSEEN) || (tileStates[x][y] & THINK_BOMB))
-       return;
+        return;
 
     tileStates[x][y] &= ~UNSEEN;
 
@@ -426,33 +428,69 @@ function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
     invalidateGameArea();
 }
 
+
 function scaleWindow() {
-    proxyObj.scaleWindow();
+    let scaleX, 
+        scaleY;
+    let oldWidth  = 400, 
+        oldHeight = 400;
+    let newWidth,
+        newHeight;
+
+    switch (gridType) {
+        case GAME_TRIANGLE:
+            scaleX = oldWidth * 2 / (gridWidth + 1);
+            scaleY = oldHeight / (7 * gridHeight / 8);
+            scaleX = 4 * (scaleX + scaleY) / 8;
+            if (scaleX < 16)
+                scaleX = 16;
+            scaleY = (scaleX * 7) / 8;
+            newWidth = scaleX / 2 * (gridWidth + 1);
+            newHeight = scaleY * gridHeight;
+            break;
+
+        case GAME_HEXAGON:
+            scaleX = oldWidth * 2 / (7 * (2 * gridWidth + 1) / 6);
+            scaleY = oldHeight * 3 / (3 * gridHeight + 1);
+            scaleY = 6 * ((scaleX + scaleY) / 12);
+            if (scaleY < 30)
+                scaleY = 18;
+            scaleX = (scaleY * 7) / 6;
+            newWidth = scaleX * (2 * gridWidth + 1) / 2;
+            newHeight = scaleY * (3 * gridHeight + 1) / 3;
+            break;
+
+        default:
+            scaleX = oldWidth / gridWidth;
+            scaleY = oldHeight / gridHeight;
+            scaleX =
+            scaleY = (scaleX + scaleY) / 2;
+            if (scaleX < 30)
+                scaleX = 
+                scaleY = 20;
+            newWidth = scaleX * gridWidth;
+            newHeight = scaleY * gridHeight;    
+    }
 }
 
 
 function drawGrid() {
-    proxyObj.drawGrid();
 }
 
 
 function setUXB(n) {
-    proxyObj.setUXB(n);
 }
 
 
 function invalidateGameArea() {
-    proxyObj.invalidateGameArea();
 }
 
 
 function updateClock(txt) {
-    proxyObj.updateClock(txt);
 }
 
 
 function drawSquare(x, y, state) {
-    proxyObj.drawSquare(x, y, state);
 }
 
 
