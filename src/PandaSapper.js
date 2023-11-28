@@ -1,38 +1,38 @@
 import * as PIXI from 'pixi.js';
 
-var NLEVELS = 3;
-var NTYPES = 3;
+const NLEVELS = 3;
+const NTYPES = 3;
 
-var EMPTY = 0;
-var ACTUAL_BOMB = 16;
-var THINK_BOMB = 32;
-var UNSEEN = 64;
+const EMPTY = 0;
+const ACTUAL_BOMB = 16;
+const THINK_BOMB = 32;
+const UNSEEN = 64;
 
-var GAME_CONTINUES = 0;
-var GAME_WAIT = 1;
-var GAME_LOST = 2;
-var GAME_WON = 3;
-var GAME_READY = 4;
+const GAME_CONTINUES = 0;
+const GAME_WAIT = 1;
+const GAME_LOST = 2;
+const GAME_WON = 3;
+const GAME_READY = 4;
 
-var GAME_START = 10;
+const GAME_START = 10;
 
-var GAME_LEVEL = 12;
-var GAME_EASY = 12;
-var GAME_MEDIUM = 13;
-var GAME_DIFFICULT = 14;
+const GAME_LEVEL = 12;
+const GAME_EASY = 12;
+const GAME_MEDIUM = 13;
+const GAME_DIFFICULT = 14;
 
-var GAME_TYPE = 20;
-var GAME_HEXAGON = 20;
-var GAME_SQUARE = 21;
-var GAME_TRIANGLE = 22;
-var CORRECT = 128;
+const GAME_TYPE = 20;
+const GAME_HEXAGON = 20;
+const GAME_SQUARE = 21;
+const GAME_TRIANGLE = 22;
+const CORRECT = 128;
 
-var MAX_SIZE = 30;
+const MAX_SIZE = 30;
 
-var OFFSET_X = 30;
-var OFFSET_Y = 30;
+const OFFSET_X = 30;
+const OFFSET_Y = 30;
 
-var MAX_RAND = 0x7FFF;
+const MAX_RAND = 0x7FFF;
 
 var gameApp;
 var gameStatus = GAME_WAIT;
@@ -41,25 +41,43 @@ var gameLevel = GAME_EASY;
 
 var newStatus = 0;
 
-var gridArea;
-var gridWidth;
-var gridHeight;
-var gridBombs;
-var gridType;
-var gridLevel;
+var gridNode = {
+    area: undefined,
+    type: undefined,
+    level: undefined,
+    cols: undefined,
+    rows: undefined,
+    bombs: undefined
+};
 
 var numberOfUnseen;
 var numberOfThink;
 
-var numberOfBombs = [10, 40, 99];
-var widthInTiles = [8, 16, 30];
-var heightInTiles = [8, 16, 16];
+const numberOfBombs = [10, 40, 99];
+const tilesInCol = [8, 16, 30];
+const tilesInRow = [8, 16, 16];
+
+var tileNodes = new Array(MAX_SIZE);
+(function() {
+    for (let col = 0; col < MAX_SIZE; col++) {
+        tileNodes[col] = new Array(MAX_SIZE);
+
+        for (let row = 0; row < MAX_SIZE; row++) {
+            let node = {
+                area: undefined,
+            };
+            tileNodes[col][row] = node;
+        }
+    }
+}());
+
 
 var tileStates = new Array(MAX_SIZE);
 (function() {
-    for (var i = 0; i < MAX_SIZE; i++)
+    for (var i = 0; i < MAX_SIZE; i++) 
         tileStates[i] = new Array(MAX_SIZE);
 }());
+
 
 var newWidth;
 var newHeight;
@@ -72,9 +90,11 @@ var startTicks;
 
 var outline = new Array(8);
 
-var gameArea;
-var gameAreaWidth = 0;
-var gameAreaHeight = 0;
+var gameNode = {
+    area: undefined,
+    w: 0,
+    h: 0
+};
 
 
 export function gameInit(app) {
@@ -130,24 +150,24 @@ function processEvents() {
 
 
 function startGame(level, type) {
-    gridType = type;
-    gridLevel = level;
-    gridWidth = widthInTiles[level-GAME_LEVEL];
-    gridHeight = heightInTiles[level-GAME_LEVEL];
-    gridBombs = numberOfBombs[level-GAME_LEVEL];
-    numberOfUnseen = gridWidth * gridHeight;
+    gridNode.type = type;
+    gridNode.level = level;
+    gridNode.cols = tilesInCol[level-GAME_LEVEL];
+    gridNode.rows = tilesInRow[level-GAME_LEVEL];
+    gridNode.bombs = numberOfBombs[level-GAME_LEVEL];
+    numberOfUnseen = gridNode.cols * gridNode.rows;
     numberOfThink = 0;
     gameStatus = GAME_READY;
 
-    for (let x = 0; x < gridWidth; x++) {
-        for (let y = 0; y < gridHeight; y++)
+    for (let x = 0; x < gridNode.cols; x++) {
+        for (let y = 0; y < gridNode.rows; y++)
             tileStates[x][y] = UNSEEN;
     }
 
     scaleWindow();
     drawGrid();
     startClock(0);
-    setUXB(gridBombs);
+    setUXB(gridNode.bombs);
 }
 
 
@@ -173,18 +193,18 @@ function hideBombs(xs, ys) {
 
     tileStates[xs][ys] += CORRECT;
 
-    for (i = 0; i < gridBombs; i++) {
+    for (i = 0; i < gridNode.bombs; i++) {
         do {
-            x = ((Math.random() * MAX_RAND) >> 8) % gridWidth;
-            y = ((Math.random() * MAX_RAND) >> 8) % gridHeight;
+            x = ((Math.random() * MAX_RAND) >> 8) % gridNode.cols;
+            y = ((Math.random() * MAX_RAND) >> 8) % gridNode.rows;
         } while(tileStates[x][y] !== UNSEEN || countAdjacent(x, y, CORRECT));
         tileStates[x][y] += ACTUAL_BOMB;
     }
 
     tileStates[xs][ys] -= CORRECT;
 
-    for (x = 0; x < gridWidth; x++) {
-        for (y = 0; y < gridHeight; y++) {
+    for (x = 0; x < gridNode.cols; x++) {
+        for (y = 0; y < gridNode.rows; y++) {
             if (!(tileStates[x][y] & ACTUAL_BOMB))
                 tileStates[x][y] += countAdjacent(x, y, ACTUAL_BOMB);
         }
@@ -208,8 +228,8 @@ function selectSquare(x, y) {
     if (tileStates[x][y] & ACTUAL_BOMB) {
         var xi, yi;
 
-        for (xi = 0; xi < gridWidth; xi++) {
-            for (yi = 0; yi < gridHeight; yi++) {
+        for (xi = 0; xi < gridNode.cols; xi++) {
+            for (yi = 0; yi < gridNode.rows; yi++) {
                 if (tileStates[xi][yi] & UNSEEN) {
                     tileStates[xi][yi] &= ~UNSEEN;
                     if (tileStates[xi][yi] & THINK_BOMB && tileStates[xi][yi] & ACTUAL_BOMB)
@@ -222,7 +242,7 @@ function selectSquare(x, y) {
         gameStatus = GAME_LOST;
         drawGrid();
     } else {
-        drawSquare(x, y, tileStates[x][y]);
+        drawSquare(x, y);
         if (numberOfThink === numberOfUnseen)
             gameStatus = GAME_WON;
     }
@@ -239,7 +259,7 @@ function selectSquareOrAdjacent(x, y) {
 
 function selectAdjacent(x, y) {
     var dx, dy;
-    var dd = gridType === GAME_TRIANGLE ? 2 : 1;
+    var dd = gridNode.type === GAME_TRIANGLE ? 2 : 1;
 
     if (tileStates[x][y] & UNSEEN || gameStatus === GAME_WAIT)
         return;
@@ -251,21 +271,21 @@ function selectAdjacent(x, y) {
 
     for (dx = -dd; dx <= dd; dx++) {
         var tmpX = x + dx;
-        if (tmpX < 0 || tmpX >= gridWidth)
+        if (tmpX < 0 || tmpX >= gridNode.cols)
             continue;
 
         for (dy = -1; dy <= 1; dy++) {
             var tmpY = y + dy;
-            if (tmpY < 0 || tmpY >= gridHeight)
+            if (tmpY < 0 || tmpY >= gridNode.rows)
                 continue;
 
             if (dx === 0 && dy === 0)
                 continue;
 
-            if (gridType === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
+            if (gridNode.type === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
                 continue;
 
-            if (gridType === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) -1 ) && (dx === -2 || dx === 2))
+            if (gridNode.type === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) -1 ) && (dx === -2 || dx === 2))
                 continue;
 
             if (!(tileStates[tmpX][tmpY] & THINK_BOMB))
@@ -279,7 +299,7 @@ function markBomb(x, y) {
     if (!(tileStates[x][y] & UNSEEN) || gameStatus === GAME_WAIT)
         return;
 
-    if (numberOfThink === gridBombs && !(tileStates[x][y] & THINK_BOMB))
+    if (numberOfThink === gridNode.bombs && !(tileStates[x][y] & THINK_BOMB))
         return;
 
     tileStates[x][y] ^= THINK_BOMB;
@@ -289,9 +309,9 @@ function markBomb(x, y) {
     else
         numberOfThink--;
 
-    setUXB(gridBombs - numberOfThink);
+    setUXB(gridNode.bombs - numberOfThink);
 
-    drawSquare(x, y, tileStates[x][y]);
+    drawSquare(x, y);
 
     if (numberOfThink === numberOfUnseen)
         gameStatus = GAME_WON;
@@ -300,7 +320,7 @@ function markBomb(x, y) {
 
 function removeEmpties(x, y) {
     var dx, dy;
-    var dd = gridType === GAME_TRIANGLE ? 2 : 1;
+    var dd = gridNode.type === GAME_TRIANGLE ? 2 : 1;
 
     if (!(tileStates[x][y] & UNSEEN) || (tileStates[x][y] & THINK_BOMB))
         return;
@@ -309,7 +329,7 @@ function removeEmpties(x, y) {
 
     numberOfUnseen--;
 
-    drawSquare(x, y, tileStates[x][y]);
+    drawSquare(x, y);
 
     if (tileStates[x][y] !== EMPTY)
         return;
@@ -317,22 +337,22 @@ function removeEmpties(x, y) {
     for (dx = -dd; dx <= dd; dx++) {
         var tmpX = x + dx;
 
-        if (tmpX < 0 || tmpX >= gridWidth)
+        if (tmpX < 0 || tmpX >= gridNode.cols)
             continue;
 
         for (dy = -1; dy <= 1; dy++) {
             var tmpY = y + dy;
 
-            if (tmpY < 0 || tmpY >= gridHeight)
+            if (tmpY < 0 || tmpY >= gridNode.rows)
                 continue;
 
             if (dx === 0 && dy === 0)
                 continue;
 
-            if (gridType === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
+            if (gridNode.type === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
                 continue;
 
-            if (gridType === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) - 1) && (dx === -2 || dx === 2))
+            if (gridNode.type === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) - 1) && (dx === -2 || dx === 2))
                 continue;
 
             removeEmpties(tmpX, tmpY);
@@ -344,23 +364,23 @@ function removeEmpties(x, y) {
 function countAdjacent(x, y, flag) {
     var n = 0;
     var dx, dy;
-    var dd = (gridType === GAME_TRIANGLE) ? 2 : 1;
+    var dd = (gridNode.type === GAME_TRIANGLE) ? 2 : 1;
 
     for (dx = -dd; dx <= dd; dx++) {
         var tmpX = x + dx;
-        if (tmpX < 0 || tmpX >= gridWidth)
+        if (tmpX < 0 || tmpX >= gridNode.cols)
             continue;
 
         for (dy = -1; dy <= 1; dy++) {
             var tmpY = y + dy;
 
-            if (tmpY < 0 || tmpY >= gridHeight)
+            if (tmpY < 0 || tmpY >= gridNode.rows)
                 continue;
 
-            if (gridType === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
+            if (gridNode.type === GAME_HEXAGON && dy !== 0 && dx === (1 - 2 * (y % 2)))
                 continue;
 
-            if (gridType === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) - 1) && (dx === -2 || dx === 2))
+            if (gridNode.type === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) - 1) && (dx === -2 || dx === 2))
                 continue;
 
             if (tileStates[tmpX][tmpY] & flag)
@@ -380,13 +400,13 @@ function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
     var buttonX = mouseX - OFFSET_X;
     var buttonY = mouseY - OFFSET_Y;
 
-    switch(gridType) {
+    switch(gridNode.type) {
         case GAME_HEXAGON:
             guessY = (buttonY / scaleY) >> 0;
             guessX = ((buttonX - (guessY % 2) * (scaleX/2)) / scaleX) >> 0;
             for (i = guessX - 1; i <= guessX + 1; i++) {
                 for (j = guessY - 1; j <= guessY + 1; j++) {
-                    if (i < 0 || i >= gridWidth || j < 0 || j >= gridHeight)
+                    if (i < 0 || i >= gridNode.cols || j < 0 || j >= gridNode.rows)
                         continue;
                     dx = buttonX - (i * scaleX + (1 + (j % 2)) * scaleX/2);
                     dy = buttonY - (j*scaleY + 2 * scaleY/3);
@@ -410,7 +430,7 @@ function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
             guessX = (buttonX * 2 / scaleX) >> 0;
             y = (buttonY / scaleY) >> 0;
             for (i = guessX - 1; i <= guessX + 1; i++) {
-                if (i < 0 || i >= gridWidth)
+                if (i < 0 || i >= gridNode.cols)
                     continue;
                 dx = buttonX - (i * scaleX/2 + scaleX/2);
                 dy = buttonY - (y * scaleY + (1 + (1 + i + y) % 2) * scaleY/3);
@@ -422,7 +442,7 @@ function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
             }
     }
 
-    if(x < 0 || x >= gridWidth || y < 0 || y >= gridHeight)
+    if(x < 0 || x >= gridNode.cols || y < 0 || y >= gridNode.rows)
         return;
 
 
@@ -445,16 +465,16 @@ function scaleWindow() {
     let oldWidth  = 400, 
         oldHeight = 400;
 
-    switch (gridType) {
+    switch (gridNode.type) {
         case GAME_TRIANGLE:
-            scaleX = oldWidth * 2 / (gridWidth + 1);
-            scaleY = oldHeight / (7 * gridHeight / 8);
+            scaleX = oldWidth * 2 / (gridNode.cols + 1);
+            scaleY = oldHeight / (7 * gridNode.rows / 8);
             scaleX = 4 * (scaleX + scaleY) / 8;
             if (scaleX < 16)
                 scaleX = 16;
             scaleY = (scaleX * 7) / 8;
-            newWidth = scaleX / 2 * (gridWidth + 1);
-            newHeight = scaleY * gridHeight;
+            newWidth = scaleX / 2 * (gridNode.cols + 1);
+            newHeight = scaleY * gridNode.rows;
             outline[1] = {x: -scaleX / 2 + 1, y: scaleY - 1};
             outline[2] = {x:  scaleX - 2,     y: 0};
             outline[3] = {x: -scaleX / 2 + 1, y: -scaleY + 1};
@@ -464,14 +484,14 @@ function scaleWindow() {
             break;
 
         case GAME_HEXAGON:
-            scaleX = oldWidth * 2 / (7 * (2 * gridWidth + 1) / 6);
-            scaleY = oldHeight * 3 / (3 * gridHeight + 1);
+            scaleX = oldWidth * 2 / (7 * (2 * gridNode.cols + 1) / 6);
+            scaleY = oldHeight * 3 / (3 * gridNode.rows + 1);
             scaleY = 6 * ((scaleX + scaleY) / 12);
             if (scaleY < 30)
                 scaleY = 18;
             scaleX = (scaleY * 7) / 6;
-            newWidth = scaleX * (2 * gridWidth + 1) / 2;
-            newHeight = scaleY * (3 * gridHeight + 1) / 3;
+            newWidth = scaleX * (2 * gridNode.cols + 1) / 2;
+            newHeight = scaleY * (3 * gridNode.rows + 1) / 3;
             outline[1] = {x:  scaleX / 2,  y: -scaleY / 3};
             outline[2] = {x:  scaleX / 2,  y:  scaleY / 3};
             outline[3] = {x:  0,           y: -scaleY / 3 + scaleY};
@@ -481,62 +501,72 @@ function scaleWindow() {
             break;
 
         default:
-            scaleX = oldWidth / gridWidth;
-            scaleY = oldHeight / gridHeight;
+            scaleX = oldWidth / gridNode.cols;
+            scaleY = oldHeight / gridNode.rows;
             scaleX =
             scaleY = (scaleX + scaleY) / 2;
             if (scaleX < 30)
                 scaleX = 
                 scaleY = 20;
-            newWidth = scaleX * gridWidth;
-            newHeight = scaleY * gridHeight;    
+            newWidth = scaleX * gridNode.cols;
+            newHeight = scaleY * gridNode.rows;    
     }
 }
 
 
 function drawGrid() {
-    recreateGameArea();
-    recreateGridArea();
+    recreateGameNode();
+    recreateGridNode();
+
+    for (let x = 0; x < gridNode.cols; x++) {
+        for (let y = 0; y < gridNode.rows; y++) {
+            drawSquare(x, y);
+        }
+    }
 }
 
 
-function recreateGameArea() {
-    if (!gameArea) {
-        gameArea = new PIXI.Graphics();
-        gameApp.stage.addChild(gameArea);
+function recreateGameNode() {
+    let area = gameNode.area;
+
+    if (!area) {
+        gameNode.area = area = new PIXI.Graphics();
+        gameApp.stage.addChild(area);
     }
 
-    let newGameAreaWidth = gameApp.renderer.width;
-    let newGameAreaHeight = gameApp.renderer.height;
+    let newW = gameApp.renderer.width;
+    let newH = gameApp.renderer.height;
 
-    if (newGameAreaWidth === gameAreaWidth &&
-        newGameAreaHeight === gameAreaHeight)
+    if (newW === gameNode.w &&
+        newH === gameNode.h)
         return;
 
-    gameAreaWidth = newGameAreaWidth;
-    gameAreaHeight = newGameAreaHeight;
+    gameNode.w = newW;
+    gameNode.h = newH;
 
-    gameArea.clear();
+    area.clear();
 
-    gameArea.beginFill(0x5555aa);
-    gameArea.drawRect(0, 0, gameAreaWidth, gameAreaHeight);
-    gameArea.endFill();
+    area.beginFill(0x5555aa);
+    area.drawRect(0, 0, newW, newH);
+    area.endFill();
 }
 
 
-function recreateGridArea() {
-    if (!gridArea) {
-        gridArea = new PIXI.Graphics();        
-        gameArea.addChild(gridArea);
-        gridArea.x = 20;
-        gridArea.y = 60;
+function recreateGridNode() {
+    let area = gridNode.area;
+
+    if (!area) {
+        gridNode.area = area = new PIXI.Graphics();        
+        gameNode.area.addChild(area);
+        area.x = 20;
+        area.y = 60;
     }
 
-    gridArea.clear();
+    area.clear();
 
-    gridArea.beginFill(0xffaaff);
-    gridArea.drawRect(0, 0, 200, 200);
-    gridArea.endFill();
+    area.beginFill(0xffaaff);
+    area.drawRect(0, 0, 200, 200);
+    area.endFill();
 }
 
 
@@ -552,7 +582,8 @@ function updateClock(txt) {
 }
 
 
-function drawSquare(x, y, state) {
+function drawSquare(x, y) {
+    let state = tileStates[x][y];
 }
 
 
