@@ -18,10 +18,12 @@ export default {
                 view: canvas
             });
 
-            let graphics = new PIXI.Graphics();
-            graphics.lineStyle(8, 0xaa0000);
-            
-            app.stage.addChild(graphics);
+            gameInit(app);
+
+            app.ticker.add(() => {
+                gameLoop();
+            });
+
         }
     },
 
@@ -29,7 +31,6 @@ export default {
         this.main();
     }
 };
-
 
 </script>
 

@@ -35,12 +35,13 @@ var OFFSET_Y = 30;
 var MAX_RAND = 0x7FFF;
 
 var gameApp;
-var gameStatus;
-var gameType;
-var gameLevel;
+var gameStatus = GAME_WAIT;
+var gameType = GAME_HEXAGON;
+var gameLevel = GAME_EASY;
 
 var newStatus = 0;
 
+var gridArea;
 var gridWidth;
 var gridHeight;
 var gridBombs;
@@ -60,11 +61,20 @@ var tileStates = new Array(MAX_SIZE);
         tileStates[i] = new Array(MAX_SIZE);
 }());
 
+var newWidth;
+var newHeight;
+
 var scaleX = 10;
 var scaleY = 10;
 
 var idleTimer;
 var startTicks;
+
+var outline = new Array(8);
+
+var gameArea;
+var gameAreaWidth = 0;
+var gameAreaHeight = 0;
 
 
 export function gameInit(app) {
@@ -73,6 +83,8 @@ export function gameInit(app) {
     idleTimer = new IdleTimer();
     idleTimer.oneShot = true;
     idleTimer.callback = displayClock;
+
+    startGame(gameLevel, gameType);
 }
 
 
@@ -430,12 +442,8 @@ function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
 
 
 function scaleWindow() {
-    let scaleX, 
-        scaleY;
     let oldWidth  = 400, 
         oldHeight = 400;
-    let newWidth,
-        newHeight;
 
     switch (gridType) {
         case GAME_TRIANGLE:
@@ -447,6 +455,12 @@ function scaleWindow() {
             scaleY = (scaleX * 7) / 8;
             newWidth = scaleX / 2 * (gridWidth + 1);
             newHeight = scaleY * gridHeight;
+            outline[1] = {x: -scaleX / 2 + 1, y: scaleY - 1};
+            outline[2] = {x:  scaleX - 2,     y: 0};
+            outline[3] = {x: -scaleX / 2 + 1, y: -scaleY + 1};
+            outline[5] = {x: -scaleX / 2 + 1, y: -scaleY};
+            outline[6] = {x: -scaleX - 2,     y: 0};
+            outline[7] = {x: -scaleX / 2 + 1, y: scaleY};
             break;
 
         case GAME_HEXAGON:
@@ -458,6 +472,12 @@ function scaleWindow() {
             scaleX = (scaleY * 7) / 6;
             newWidth = scaleX * (2 * gridWidth + 1) / 2;
             newHeight = scaleY * (3 * gridHeight + 1) / 3;
+            outline[1] = {x:  scaleX / 2,  y: -scaleY / 3};
+            outline[2] = {x:  scaleX / 2,  y:  scaleY / 3};
+            outline[3] = {x:  0,           y: -scaleY / 3 + scaleY};
+            outline[4] = {x: -scaleX / 2 , y:  scaleY / 3};
+            outline[5] = {x: -scaleX / 2,  y: -scaleY / 3};
+            outline[6] = {x:  0,           y:  scaleY / 3 - scaleY};
             break;
 
         default:
@@ -475,6 +495,48 @@ function scaleWindow() {
 
 
 function drawGrid() {
+    recreateGameArea();
+    recreateGridArea();
+}
+
+
+function recreateGameArea() {
+    if (!gameArea) {
+        gameArea = new PIXI.Graphics();
+        gameApp.stage.addChild(gameArea);
+    }
+
+    let newGameAreaWidth = gameApp.renderer.width;
+    let newGameAreaHeight = gameApp.renderer.height;
+
+    if (newGameAreaWidth === gameAreaWidth &&
+        newGameAreaHeight === gameAreaHeight)
+        return;
+
+    gameAreaWidth = newGameAreaWidth;
+    gameAreaHeight = newGameAreaHeight;
+
+    gameArea.clear();
+
+    gameArea.beginFill(0x5555aa);
+    gameArea.drawRect(0, 0, gameAreaWidth, gameAreaHeight);
+    gameArea.endFill();
+}
+
+
+function recreateGridArea() {
+    if (!gridArea) {
+        gridArea = new PIXI.Graphics();        
+        gameArea.addChild(gridArea);
+        gridArea.x = 20;
+        gridArea.y = 60;
+    }
+
+    gridArea.clear();
+
+    gridArea.beginFill(0xffaaff);
+    gridArea.drawRect(0, 0, 200, 200);
+    gridArea.endFill();
 }
 
 
