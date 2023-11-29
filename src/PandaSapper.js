@@ -65,17 +65,12 @@ var tileNodes = new Array(MAX_SIZE);
         for (let row = 0; row < MAX_SIZE; row++) {
             let node = {
                 area: undefined,
+                areaState: undefined,
+                tileState: undefined
             };
             tileNodes[col][row] = node;
         }
     }
-}());
-
-
-var tileStates = new Array(MAX_SIZE);
-(function() {
-    for (var i = 0; i < MAX_SIZE; i++) 
-        tileStates[i] = new Array(MAX_SIZE);
 }());
 
 
@@ -88,7 +83,7 @@ var scaleY = 10;
 var idleTimer;
 var startTicks;
 
-var outline = new Array(8);
+var outline = new Array(6);
 
 var gameNode = {
     area: undefined,
@@ -161,7 +156,7 @@ function startGame(level, type) {
 
     for (let x = 0; x < gridNode.cols; x++) {
         for (let y = 0; y < gridNode.rows; y++)
-            tileStates[x][y] = UNSEEN;
+            tileNodes[x][y].tileState = UNSEEN;
     }
 
     scaleWindow();
@@ -191,22 +186,22 @@ function hideBombs(xs, ys) {
     var i
     var x, y;
 
-    tileStates[xs][ys] += CORRECT;
+    tileNodes[xs][ys].tileState += CORRECT;
 
     for (i = 0; i < gridNode.bombs; i++) {
         do {
             x = ((Math.random() * MAX_RAND) >> 8) % gridNode.cols;
             y = ((Math.random() * MAX_RAND) >> 8) % gridNode.rows;
-        } while(tileStates[x][y] !== UNSEEN || countAdjacent(x, y, CORRECT));
-        tileStates[x][y] += ACTUAL_BOMB;
+        } while (tileNodes[x][y].tileState !== UNSEEN || countAdjacent(x, y, CORRECT));
+        tileNodes[x][y].tileState += ACTUAL_BOMB;
     }
 
-    tileStates[xs][ys] -= CORRECT;
+    tileNodes[xs][ys].tileState -= CORRECT;
 
     for (x = 0; x < gridNode.cols; x++) {
         for (y = 0; y < gridNode.rows; y++) {
-            if (!(tileStates[x][y] & ACTUAL_BOMB))
-                tileStates[x][y] += countAdjacent(x, y, ACTUAL_BOMB);
+            if (!(tileNodes[x][y].tileState & ACTUAL_BOMB))
+            tileNodes[x][y].tileState += countAdjacent(x, y, ACTUAL_BOMB);
         }
     }
 
@@ -214,8 +209,8 @@ function hideBombs(xs, ys) {
 }
 
 
-function selectSquare(x, y) {
-    if (!(tileStates[x][y] & UNSEEN) || tileStates[x][y] & THINK_BOMB || gameStatus === GAME_WAIT)
+function selectTile(x, y) {
+    if (!(tileNodes[x][y].tileState & UNSEEN) || tileNodes[x][y].tileState & THINK_BOMB || gameStatus === GAME_WAIT)
         return;
 
     if (gameStatus === GAME_READY) {
@@ -225,33 +220,33 @@ function selectSquare(x, y) {
 
     removeEmpties(x, y);
 
-    if (tileStates[x][y] & ACTUAL_BOMB) {
+    if (tileNodes[x][y].tileState & ACTUAL_BOMB) {
         var xi, yi;
 
         for (xi = 0; xi < gridNode.cols; xi++) {
             for (yi = 0; yi < gridNode.rows; yi++) {
-                if (tileStates[xi][yi] & UNSEEN) {
-                    tileStates[xi][yi] &= ~UNSEEN;
-                    if (tileStates[xi][yi] & THINK_BOMB && tileStates[xi][yi] & ACTUAL_BOMB)
-                        tileStates[xi][yi] |= CORRECT;
+                if (tileNodes[xi][yi].tileState & UNSEEN) {
+                    tileNodes[xi][yi].tileState &= ~UNSEEN;
+                    if (tileNodes[xi][yi].tileState & THINK_BOMB && tileNodes[xi][yi].tileState & ACTUAL_BOMB)
+                    tileNodes[xi][yi].tileState |= CORRECT;
                 } else {
-                    tileStates[xi][yi] |= CORRECT;
+                    tileNodes[xi][yi].tileState |= CORRECT;
                 }
             }
         }
         gameStatus = GAME_LOST;
         drawGrid();
     } else {
-        drawSquare(x, y);
+        drawTile(x, y);
         if (numberOfThink === numberOfUnseen)
             gameStatus = GAME_WON;
     }
 }
 
 
-function selectSquareOrAdjacent(x, y) {
-    if (tileStates[x][y] & UNSEEN)
-        selectSquare(x, y);
+function selectTileOrAdjacent(x, y) {
+    if (tileNodes[x][y].tileState & UNSEEN)
+        selectTile(x, y);
     else
         selectAdjacent(x, y);
 }
@@ -261,12 +256,12 @@ function selectAdjacent(x, y) {
     var dx, dy;
     var dd = gridNode.type === GAME_TRIANGLE ? 2 : 1;
 
-    if (tileStates[x][y] & UNSEEN || gameStatus === GAME_WAIT)
+    if (tileNodes[x][y].tileState & UNSEEN || gameStatus === GAME_WAIT)
         return;
 
     var n = countAdjacent(x, y, THINK_BOMB);
 
-    if (tileStates[x][y] !== n)
+    if (tileNodes[x][y].tileState !== n)
         return;
 
     for (dx = -dd; dx <= dd; dx++) {
@@ -288,30 +283,29 @@ function selectAdjacent(x, y) {
             if (gridNode.type === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) -1 ) && (dx === -2 || dx === 2))
                 continue;
 
-            if (!(tileStates[tmpX][tmpY] & THINK_BOMB))
-                selectSquare(tmpX, tmpY);
+            if (!(tileNodes[tmpX][tmpY].tileState & THINK_BOMB))
+                selectTile(tmpX, tmpY);
         }
     }
 }
 
 
 function markBomb(x, y) {
-    if (!(tileStates[x][y] & UNSEEN) || gameStatus === GAME_WAIT)
+    let node = tileNodes[x][y];
+
+    if (!(node.tileState & UNSEEN) || gameStatus === GAME_WAIT)
         return;
 
-    if (numberOfThink === gridNode.bombs && !(tileStates[x][y] & THINK_BOMB))
+    if (numberOfThink === gridNode.bombs && !(node.tileState & THINK_BOMB))
         return;
 
-    tileStates[x][y] ^= THINK_BOMB;
+    node.tileState ^= THINK_BOMB;
 
-    if(tileStates[x][y] & THINK_BOMB)
-        numberOfThink++;
-    else
-        numberOfThink--;
+    numberOfThink += (node.tileState & THINK_BOMB) ? 1 : -1;
 
     setUXB(gridNode.bombs - numberOfThink);
 
-    drawSquare(x, y);
+    drawTile(x, y);
 
     if (numberOfThink === numberOfUnseen)
         gameStatus = GAME_WON;
@@ -322,16 +316,16 @@ function removeEmpties(x, y) {
     var dx, dy;
     var dd = gridNode.type === GAME_TRIANGLE ? 2 : 1;
 
-    if (!(tileStates[x][y] & UNSEEN) || (tileStates[x][y] & THINK_BOMB))
+    if (!(tileNodes[x][y].tileState & UNSEEN) || (tileNodes[x][y].tileState & THINK_BOMB))
         return;
 
-    tileStates[x][y] &= ~UNSEEN;
+        tileNodes[x][y].tileState &= ~UNSEEN;
 
     numberOfUnseen--;
 
-    drawSquare(x, y);
+    drawTile(x, y);
 
-    if (tileStates[x][y] !== EMPTY)
+    if (tileNodes[x][y].tileState !== EMPTY)
         return;
 
     for (dx = -dd; dx <= dd; dx++) {
@@ -383,7 +377,7 @@ function countAdjacent(x, y, flag) {
             if (gridNode.type === GAME_TRIANGLE && dy === (2 * ((x + y) % 2) - 1) && (dx === -2 || dx === 2))
                 continue;
 
-            if (tileStates[tmpX][tmpY] & flag)
+            if (tileNodes[tmpX][tmpY].tileState & flag)
                 n++;
         }
     }
@@ -448,7 +442,7 @@ function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
 
     switch(buttonNumber) {
         case 1:
-            selectSquareOrAdjacent(x, y);
+            selectTileOrAdjacent(x, y);
             break;
         case 2:
             selectAdjacent(x, y);
@@ -475,12 +469,10 @@ function scaleWindow() {
             scaleY = (scaleX * 7) / 8;
             newWidth = scaleX / 2 * (gridNode.cols + 1);
             newHeight = scaleY * gridNode.rows;
-            outline[1] = {x: -scaleX / 2 + 1, y: scaleY - 1};
-            outline[2] = {x:  scaleX - 2,     y: 0};
-            outline[3] = {x: -scaleX / 2 + 1, y: -scaleY + 1};
-            outline[5] = {x: -scaleX / 2 + 1, y: -scaleY};
-            outline[6] = {x: -scaleX - 2,     y: 0};
-            outline[7] = {x: -scaleX / 2 + 1, y: scaleY};
+            outline[0] = {x: -scaleX / 2 + 1, y: scaleY - 1};
+            outline[1] = {x:  scaleX - 2,     y: 0};
+            outline[2] = {x: -scaleX / 2 + 1, y: -scaleY};
+            outline[3] = {x:  scaleX - 2,     y: 0};
             break;
 
         case GAME_HEXAGON:
@@ -492,12 +484,12 @@ function scaleWindow() {
             scaleX = (scaleY * 7) / 6;
             newWidth = scaleX * (2 * gridNode.cols + 1) / 2;
             newHeight = scaleY * (3 * gridNode.rows + 1) / 3;
-            outline[1] = {x:  scaleX / 2,  y: -scaleY / 3};
-            outline[2] = {x:  scaleX / 2,  y:  scaleY / 3};
-            outline[3] = {x:  0,           y: -scaleY / 3 + scaleY};
-            outline[4] = {x: -scaleX / 2 , y:  scaleY / 3};
-            outline[5] = {x: -scaleX / 2,  y: -scaleY / 3};
-            outline[6] = {x:  0,           y:  scaleY / 3 - scaleY};
+            outline[0] = {x:  scaleX / 2,  y: -scaleY / 3};
+            outline[1] = {x:  scaleX / 2,  y:  scaleY / 3};
+            outline[2] = {x:  0,           y: -scaleY / 3 + scaleY};
+            outline[3] = {x: -scaleX / 2 , y:  scaleY / 3};
+            outline[4] = {x: -scaleX / 2,  y: -scaleY / 3};
+            outline[5] = {x:  0,           y:  scaleY / 3 - scaleY};
             break;
 
         default:
@@ -509,7 +501,10 @@ function scaleWindow() {
                 scaleX = 
                 scaleY = 20;
             newWidth = scaleX * gridNode.cols;
-            newHeight = scaleY * gridNode.rows;    
+            newHeight = scaleY * gridNode.rows;  
+            outline[0] = {x:  scaleX, y: 0};
+            outline[1] = {x:  0,      y: scaleY};
+            outline[2] = {x: -scaleX, y: 0};
     }
 }
 
@@ -520,7 +515,7 @@ function drawGrid() {
 
     for (let x = 0; x < gridNode.cols; x++) {
         for (let y = 0; y < gridNode.rows; y++) {
-            drawSquare(x, y);
+            drawTile(x, y);
         }
     }
 }
@@ -582,8 +577,65 @@ function updateClock(txt) {
 }
 
 
-function drawSquare(x, y) {
-    let state = tileStates[x][y];
+function drawTile(col, row) {
+    let node = tileNodes[col][row];
+
+    if (node.tileState === node.areaState)
+        return;
+
+    node.areaState = node.tileState;
+
+    let area = node.area;
+
+    if (!area) {
+        node.area = area = new PIXI.Graphics();
+        gridNode.area.addChild(area);
+    }
+
+    let tmpX = 0,
+        tmpY = 0;
+    let path;    
+
+    switch (gridNode.type) {
+        case GAME_TRIANGLE:
+            area.x = col * scaleX / 2 + scaleX / 2;
+            area.y = row * scaleY - ((col + row) % 2) * scaleY / 2 + scaleY / 2;
+            if ((col + row) % 2) {
+                path = outline.slice(0, 2);
+            } else {
+                tmpY = scaleY / 2;
+                path = outline.slice(2, 4);
+            }
+            break;
+
+        case GAME_HEXAGON:
+            area.x = col * scaleX + (row % 2) * scaleX/2;
+            area.y = row * scaleY + scaleY / 3;
+            path = outline.slice(0, 6);            
+            break;
+
+        default:
+            area.x = col * scaleX;
+            area.y = row * scaleY;  
+            path = outline.slice(0, 3);      
+    }
+
+    let points = [tmpX, tmpY];
+    for (let item of path) {
+        tmpX += item.x;
+        tmpY += item.y;
+        points.push(tmpX, tmpY);
+    }
+
+    area.x += OFFSET_X;
+    area.y += OFFSET_Y;
+
+    area.clear();
+
+    area.beginFill(0x0055FF);
+    area.lineStyle(2, 0xFF0000);
+    area.drawPolygon(points);
+    area.endFill();
 }
 
 
