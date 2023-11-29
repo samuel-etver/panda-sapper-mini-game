@@ -34,6 +34,25 @@ const OFFSET_Y = 30;
 
 const MAX_RAND = 0x7FFF;
 
+const GC_BOMB        = 0;
+const GC_ACTUAL_BACK = 1;
+const GC_THINK_BACK  = 2;
+const GC_NUMBER1     = 3;
+const GC_NUMBER2     = 4;
+const GC_NUMBER3     = 5;
+const GC_NUMBER4     = 6;
+const GC_NUMBER5     = 7;
+const GC_NUMBER6     = 8;
+const GC_NUMBER7     = 9;
+const GC_NUMBER8     = 10;
+const GC_NUMBER9     = 11;
+const GC_NUMBER10    = 12;
+const GC_NUMBER11    = 13;
+const GC_NUMBER12    = 14;
+const GC_UNSEEN      = 15;
+const GC_CORRECT     = 16;
+const GC_BLANK       = 17;
+
 var gameApp;
 var gameStatus = GAME_WAIT;
 var gameType = GAME_HEXAGON;
@@ -56,6 +75,28 @@ var numberOfThink;
 const numberOfBombs = [10, 40, 99];
 const tilesInCol = [8, 16, 30];
 const tilesInRow = [8, 16, 16];
+const tileNumbers = ["", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C"];
+
+const gameColors = {
+    [GC_BOMB]:          0xFF0000, //0x000000,
+    [GC_ACTUAL_BACK]:   0xFF0000,
+    [GC_THINK_BACK]:    0xFFA500,
+    [GC_NUMBER1]:       0x000080,
+    [GC_NUMBER2]:       0x006400,
+    [GC_NUMBER3]:       0x8B0000,
+    [GC_NUMBER4]:       0x000000,
+    [GC_NUMBER5]:       0x30D5C8,
+    [GC_NUMBER6]:       0xFFA500,
+    [GC_NUMBER7]:       0x7F00FF,
+    [GC_NUMBER8]:       0x90EE90,
+    [GC_NUMBER9]:       0x0000FF,
+    [GC_NUMBER10]:      0x0000FF,
+    [GC_NUMBER11]:      0x0000FF,
+    [GC_NUMBER12]:      0x0000FF,
+    [GC_UNSEEN]:        0x7F7F7F,
+    [GC_CORRECT]:       0x00FF00,
+    [GC_BLANK]:         0x0B0082
+};
 
 var tileNodes = new Array(MAX_SIZE);
 (function() {
@@ -579,11 +620,12 @@ function updateClock(txt) {
 
 function drawTile(col, row) {
     let node = tileNodes[col][row];
+    let tileState = node.tileState;
 
-    if (node.tileState === node.areaState)
+    if (tileState === node.areaState)
         return;
 
-    node.areaState = node.tileState;
+    node.areaState = tileState;
 
     let area = node.area;
 
@@ -630,10 +672,24 @@ function drawTile(col, row) {
     area.x += OFFSET_X;
     area.y += OFFSET_Y;
 
+ 
+    const brushColor = (function(state) {
+        let index;
+        if (state & UNSEEN) 
+            index = (state & THINK_BOMB) ? GC_THINK_BACK : GC_UNSEEN;
+        else 
+            index = (state & ACTUAL_BOMB) ? GC_ACTUAL_BACK : GC_BLANK;
+        return gameColors[index];
+    }(tileState));
+
+    const penColor = gameColors[(tileState & CORRECT) ? GC_CORRECT : GC_BOMB];
+
+    const txtColor = gameColors[(tileState & ~CORRECT) + GC_NUMBER1 - 1];
+
     area.clear();
 
-    area.beginFill(0x0055FF);
-    area.lineStyle(2, 0xFF0000);
+    area.beginFill(brushColor);
+    area.lineStyle(2, penColor);
     area.drawPolygon(points);
     area.endFill();
 }
