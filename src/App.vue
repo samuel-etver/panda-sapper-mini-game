@@ -8,6 +8,8 @@ export default {
 
     methods: {
         main() {
+            window.addEventListener('contextmenu', e => e.preventDefault());
+
             let canvas = document.getElementById('game-canvas');
 
             const app = new PIXI.Application({
@@ -23,7 +25,6 @@ export default {
             app.ticker.add(() => {
                 gameLoop();
             });
-
         }
     },
 

@@ -427,24 +427,29 @@ function countAdjacent(x, y, flag) {
 }
 
 
-function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
+function onGameAreaPointerDown(event) {
+    let p = gridNode.area.toLocal(event.global);
+    let buttons = {0: 1, 2: 3};
+    let buttonNumber = buttons[event.button];
+    gameAreaClicked(p.x - OFFSET_X, p.y - OFFSET_Y, buttonNumber);
+}
+
+
+function gameAreaClicked(pointerX, pointerY, buttonNumber) {
     var x = -1, y = -1;
     var guessX, guessY, dx, dy;
     var i, j, d, dmin = 1e6;
 
-    var buttonX = mouseX - OFFSET_X;
-    var buttonY = mouseY - OFFSET_Y;
-
     switch(gridNode.type) {
         case GAME_HEXAGON:
-            guessY = (buttonY / scaleY) >> 0;
-            guessX = ((buttonX - (guessY % 2) * (scaleX/2)) / scaleX) >> 0;
+            guessY = (pointerY / scaleY) >> 0;
+            guessX = ((pointerX - (guessY % 2) * (scaleX/2)) / scaleX) >> 0;
             for (i = guessX - 1; i <= guessX + 1; i++) {
                 for (j = guessY - 1; j <= guessY + 1; j++) {
                     if (i < 0 || i >= gridNode.cols || j < 0 || j >= gridNode.rows)
                         continue;
-                    dx = buttonX - (i * scaleX + (1 + (j % 2)) * scaleX/2);
-                    dy = buttonY - (j*scaleY + 2 * scaleY/3);
+                    dx = pointerX - (i * scaleX + (1 + (j % 2)) * scaleX/2);
+                    dy = pointerY - (j*scaleY + 2 * scaleY/3);
                     d = dx * dx + dy * dy;
                     if (d < dmin) {
                         x = i;
@@ -457,18 +462,18 @@ function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
             break;
 
         case GAME_SQUARE:
-            x = (buttonX / scaleX) >> 0;
-            y = (buttonY / scaleY) >> 0;
+            x = (pointerX / scaleX) >> 0;
+            y = (pointerY / scaleY) >> 0;
             break;
 
         case GAME_TRIANGLE:
-            guessX = (buttonX * 2 / scaleX) >> 0;
-            y = (buttonY / scaleY) >> 0;
+            guessX = (pointerX * 2 / scaleX) >> 0;
+            y = (pointerY / scaleY) >> 0;
             for (i = guessX - 1; i <= guessX + 1; i++) {
                 if (i < 0 || i >= gridNode.cols)
                     continue;
-                dx = buttonX - (i * scaleX/2 + scaleX/2);
-                dy = buttonY - (y * scaleY + (1 + (1 + i + y) % 2) * scaleY/3);
+                dx = pointerX - (i * scaleX/2 + scaleX/2);
+                dy = pointerY - (y * scaleY + (1 + (1 + i + y) % 2) * scaleY/3);
                 d = dx * dx + dy * dy;
                 if (d < dmin) {
                     x = i;
@@ -484,9 +489,6 @@ function onGameAreaClicked(mouseX, mouseY, buttonNumber) {
     switch(buttonNumber) {
         case 1:
             selectTileOrAdjacent(x, y);
-            break;
-        case 2:
-            selectAdjacent(x, y);
             break;
         case 3:
             markBomb(x, y);
@@ -594,6 +596,8 @@ function recreateGridNode() {
     if (!area) {
         gridNode.area = area = new PIXI.Graphics();        
         gameNode.area.addChild(area);
+        area.eventMode = 'static';
+        area.on('pointerdown', onGameAreaPointerDown);
         area.x = 20;
         area.y = 60;
     }
