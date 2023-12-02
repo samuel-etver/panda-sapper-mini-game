@@ -168,7 +168,7 @@ export function gameLoop() {
 
     if (gameStatus === GAME_WON) {
         var elapsedTime = stopGame();
-        addHighScore(ticks);
+        addHighScore(elapsedTime);
         showHighScores();
     }
     else if (gameStatus === GAME_LOST) {
@@ -641,6 +641,7 @@ function drawTile(col, row) {
     let tmpX = 0,
         tmpY = 0;
     let path;    
+    let centerY;
 
     switch (gridNode.type) {
         case GAME_TRIANGLE:
@@ -652,18 +653,21 @@ function drawTile(col, row) {
                 tmpY = scaleY / 2;
                 path = outline.slice(2, 4);
             }
+            centerY = scaleY * 0.5;
             break;
 
         case GAME_HEXAGON:
             area.x = col * scaleX + (row % 2) * scaleX/2;
             area.y = row * scaleY + scaleY / 3;
             path = outline.slice(0, 6);            
+            centerY = scaleY * 0.33;
             break;
 
         default:
             area.x = col * scaleX;
             area.y = row * scaleY;  
             path = outline.slice(0, 3);      
+            centerY = scaleY * 0.5;            
     }
 
     let points = [tmpX, tmpY];
@@ -688,7 +692,7 @@ function drawTile(col, row) {
 
     const penColor = gameColors[(tileState & CORRECT) ? GC_CORRECT : GC_BOMB];
 
-    const txtColor = gameColors[(tileState & ~CORRECT) + GC_NUMBER1 - 1];
+    const txtColor = 0xFFFFFF;//gameColors[(tileState & ~CORRECT) + GC_NUMBER1 - 1];
 
     area.clear();
 
@@ -696,6 +700,19 @@ function drawTile(col, row) {
     area.lineStyle(2, penColor);
     area.drawPolygon(points);
     area.endFill();
+
+    const numberStr = tileNumbers[tileState & ~CORRECT];
+    if (numberStr) {
+        const text = area.addChild(new PIXI.Text(numberStr, {
+            fontSize: scaleY * 0.8,
+            fontWeight: 'bold',
+            fill: txtColor,
+        }));
+
+        text.anchor.set(0.5, 0.5);
+        text.x = scaleX / 2;
+        text.y = centerY; 
+    }
 }
 
 
