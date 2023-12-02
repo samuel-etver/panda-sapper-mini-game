@@ -114,6 +114,32 @@ var tileNodes = new Array(MAX_SIZE);
     }
 }());
 
+var controlNode = {
+    area: undefined
+};
+
+
+var bombHintButtonNode = {
+    area: undefined,
+};
+
+var emptyHintButtonNode = {
+    area: undefined,
+};
+
+var optionsButtonNode = {
+    area: undefined,
+};
+
+var hiscoresButtonNode = {
+    area: undefined,
+};
+
+
+var scoreboardNode = {
+    area: undefined,
+};
+
 
 var newWidth;
 var newHeight;
@@ -554,6 +580,8 @@ function scaleWindow() {
 
 function drawGrid() {
     recreateGameNode();
+    recreateControlNode();
+    recreateScoreboardNode();
     recreateGridNode();
 
     for (let x = 0; x < gridNode.cols; x++) {
@@ -784,4 +812,70 @@ IdleTimer.prototype.idle = function() {
         if (this.callback)
             this.callback();
     }
+}
+
+
+function recreateControlNode() {
+    let controlArea = controlNode.area;
+    let optionsButtonArea = optionsButtonNode.area;
+    let hiscoresButtonArea = hiscoresButtonNode.area;
+    let bombHintButtonArea = bombHintButtonNode.area;
+    let emptyHintButtonArea = emptyHintButtonNode.area;
+
+    if (!controlArea) {
+        controlNode.area = controlArea = new PIXI.Graphics();
+        gameNode.area.addChild(controlArea);
+
+        bombHintButtonNode.area = bombHintButtonArea = new PIXI.Graphics();
+        gameNode.area.addChild(bombHintButtonArea);
+
+        emptyHintButtonNode.area = emptyHintButtonArea = new PIXI.Graphics();
+        gameNode.area.addChild(emptyHintButtonArea);
+
+        optionsButtonNode.area = optionsButtonArea = new PIXI.Graphics();
+        controlArea.addChild(optionsButtonArea);
+
+        hiscoresButtonNode.area = hiscoresButtonArea = new PIXI.Graphics();
+        controlArea.addChild(hiscoresButtonArea);
+    }
+
+    controlArea.clear();
+    controlArea.beginFill(0xFFFF00);
+    controlArea.drawRect(20, 0, 400, 20);
+    controlArea.endFill();
+
+    bombHintButtonArea.clear();
+    bombHintButtonArea.beginFill(0x88AA00);
+    bombHintButtonArea.drawRect(0, 0, 50, 20);
+    bombHintButtonArea.endFill();
+
+    emptyHintButtonArea.clear();
+    emptyHintButtonArea.beginFill(0x00AA44);
+    emptyHintButtonArea.drawRect(50, 0, 50, 20);
+    emptyHintButtonArea.endFill();
+
+    optionsButtonArea.clear();
+    optionsButtonArea.beginFill(0x44FF33);
+    optionsButtonArea.drawRect(100, 0, 100, 20);
+    optionsButtonArea.endFill();
+
+    hiscoresButtonArea.clear();
+    hiscoresButtonArea.beginFill(0x4400FF);
+    hiscoresButtonArea.drawRect(300, 0, 100, 20);
+    hiscoresButtonArea.endFill();
+}
+
+
+function recreateScoreboardNode() {
+    let scoreboardArea = scoreboardNode.area;
+
+    if (!scoreboardArea) {
+        scoreboardNode.area = scoreboardArea = new PIXI.Graphics();
+        gameNode.area.addChild(scoreboardArea);
+    }
+
+    scoreboardArea.clear();
+    scoreboardArea.beginFill(0x00FFFF);
+    scoreboardArea.drawRect(20, 30, 400, 20);
+    scoreboardArea.endFill();
 }
