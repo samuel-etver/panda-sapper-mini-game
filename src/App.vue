@@ -22,8 +22,8 @@ export default {
 
             gameInit(app);
 
-            app.ticker.add(() => {
-                gameLoop();
+            app.ticker.add(deltaTime => {
+                gameLoop(deltaTime);
             });
         }
     },

@@ -1,4 +1,5 @@
 import * as PIXI from 'pixi.js';
+import { IdleTimer } from './IdleTimer.js';
 
 const NLEVELS = 3;
 const NTYPES = 3;
@@ -170,8 +171,8 @@ export function gameInit(app) {
 }
 
 
-export function gameLoop() {
-    idleTimer.idle();
+export function gameLoop(deltaTime) {
+    idleTimer.idle(deltaTime);
 
     var xstatus = processEvents();
 
@@ -774,44 +775,6 @@ function stopClock() {
 
 function elapsedTime() {
     return Date.now() - startTicks;
-}
-
-
-function IdleTimer() {
-    this.interval = 100;
-    this.enabled = false;
-    this.oneShot = false;
-    this.callback = undefined;
-    this.lastTicks = undefined;
-}
-
-
-IdleTimer.prototype.start = function() {
-    this.enabled = true;
-    this.lastTicks = Date.now();
-}
-
-
-IdleTimer.prototype.stop = function() {
-    this.enabled = false;
-}
-
-
-IdleTimer.prototype.idle = function() {
-    if (!this.enabled)
-        return;
-
-    var currTicks = Date.now();
-
-    if ((currTicks - this.lastTicks) >= this.interval) {
-        this.lastTicks += this.interval;
-
-        if (this.oneShot)
-            this.stop();
-
-        if (this.callback)
-            this.callback();
-    }
 }
 
 
